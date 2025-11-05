@@ -26,3 +26,12 @@ Run each part independently (recommended on GPU clusters such as NYU Greene).
 cd PartA
 make clean && make vecadd01
 ./vecadd01 1000
+```
+
+For Part C (requires cuDNN):
+```
+cd PartC
+module load cuda/12.4 cudnn/8.9
+make
+./convolution
+```
