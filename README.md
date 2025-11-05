@@ -29,7 +29,7 @@ make clean && make vecadd01
 ```
 
 For Part C (requires cuDNN):
-```
+```bash
 cd PartC
 module load cuda/12.4 cudnn/8.9
 make
