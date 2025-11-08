@@ -1,9 +1,19 @@
-#include "vecaddKernel.h"
+// vecAddKernel00.cu
+// For ECE-GY 9143 - High Performance Computing for Machine Learning
+// Instructor: Zehra Sura and Robert Kingan
+// Based on code from the CUDA Programming Guide
 
-__global__ void vecAddKernel00(float *A, float *B, float *C, int N) {
-    int tid = threadIdx.x + blockIdx.x * blockDim.x;
-    int stride = blockDim.x * gridDim.x;
+// This Kernel adds two Vectors A and B in C on GPU
+// without using coalesced memory access.
 
-    for (int i = tid; i < N; i += stride * 2)  // stride too big → uncoalesced
-        if (i < N) C[i] = A[i] + B[i];
+__global__ void AddVectors(const float* A, const float* B, float* C, int N)
+{
+    int blockStartIndex  = blockIdx.x * blockDim.x * N;
+    int threadStartIndex = blockStartIndex + (threadIdx.x * N);
+    int threadEndIndex   = threadStartIndex + N;
+    int i;
+
+    for( i=threadStartIndex; i<threadEndIndex; ++i ){
+        C[i] = A[i] + B[i];
+    }
 }
