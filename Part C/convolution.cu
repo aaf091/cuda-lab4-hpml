@@ -295,7 +295,7 @@ void convolutionC1(const Matrix input, const Filter filter, Matrix output, float
 
     // Warmup 
     basicConvolution<<<dimGrid, dimBlock>>>(device_input, device_filter, device_output);
-    cudaThreadSynchronize();
+    cudaDeviceSynchronize();
 
     // Setup timing events to measure execution time.
     cudaEvent_t start_time, end_time;
@@ -305,7 +305,7 @@ void convolutionC1(const Matrix input, const Filter filter, Matrix output, float
     // Execute the convolution kernel.
     cudaEventRecord(start_time);
     basicConvolution<<<dimGrid, dimBlock>>>(device_input, device_filter, device_output);
-    cudaThreadSynchronize();
+    cudaDeviceSynchronize();
     cudaEventRecord(end_time);
     cudaEventSynchronize(end_time);
     cudaEventElapsedTime(&executionTime, start_time, end_time);
@@ -336,7 +336,7 @@ void convolutionC2(const Matrix input, const Filter filter, Matrix output, float
 
     // Warmup
     tiledConvolutionSharedMemory<<<dimGrid, dimBlock>>>(device_input, device_filter, device_output);
-    cudaThreadSynchronize();
+    cudaDeviceSynchronize();
 
     // Setup timing events.
     cudaEvent_t start_time, end_time;
@@ -346,7 +346,7 @@ void convolutionC2(const Matrix input, const Filter filter, Matrix output, float
     // Execute the tiled convolution kernel.
     cudaEventRecord(start_time);
     tiledConvolutionSharedMemory<<<dimGrid, dimBlock>>>(device_input, device_filter, device_output);
-    cudaThreadSynchronize();
+    cudaDeviceSynchronize();
     cudaEventRecord(end_time);
     cudaEventSynchronize(end_time);
 
@@ -421,7 +421,7 @@ void convolutionC3(const Matrix input, const Filter filter, Matrix output, float
                             convDesc, selectedAlgo, workspace, workspaceSize, &beta,
                             outputDesc, device_output.elements);
 
-    cudaThreadSynchronize();
+    cudaDeviceSynchronize();
 
     // Stop the timer and calculate the elapsed time.
     cudaEventRecord(end_time);
@@ -468,9 +468,9 @@ int main() {
     convolutionC3(inputMatrix, convolutionFilter, outputMatrix3, executionTimeC3);
     checksumC3 = getCheckSum(outputMatrix3);
 
-    printf("Checksum : %.0f, Time : %.3f millisec\n", checksumC1, executionTimeC1);
-    printf("Checksum : %.0f, Time : %.3f millisec\n", checksumC2, executionTimeC2);
-    printf("Checksum : %.0f, Time : %.3f millisec\n", checksumC3, executionTimeC3);
+    printf("C1_%.0f,%.3f\n", checksumC1, executionTimeC1);
+    printf("C2_%.0f,%.3f\n", checksumC2, executionTimeC2);
+    printf("C3_%.0f,%.3f\n", checksumC3, executionTimeC3);
 
     free(inputMatrix.elements);
     free(paddedInputMatrix.elements);

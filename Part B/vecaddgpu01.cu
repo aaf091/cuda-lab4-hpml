@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
     cudaMallocManaged(&x, size);
     cudaMallocManaged(&y, size);
     cudaMallocManaged(&z, size);
-    cudaThreadSynchronize();
+    cudaDeviceSynchronize();
     clock_gettime(CLOCK_MONOTONIC, &end);
     
     unified_memory_allocation_time = ((double)(end.tv_sec - start.tv_sec)*1000000) + ((double)(end.tv_nsec - start.tv_nsec)/1000);
@@ -64,7 +64,7 @@ int main(int argc, char** argv) {
     addVec<<<dimGrid, dimBlock>>>(n, x, y, z);
     error = cudaGetLastError();
     if (error != cudaSuccess) Cleanup(false);
-    cudaThreadSynchronize();
+    cudaDeviceSynchronize();
 
 
     // Invoke kernel
@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
     addVec<<<dimGrid, dimBlock>>>(n, x, y, z);
     error = cudaGetLastError();
     if (error != cudaSuccess) Cleanup(false);
-    cudaThreadSynchronize();
+    cudaDeviceSynchronize();
     clock_gettime(CLOCK_MONOTONIC, &end);
 
     time = ((double)(end.tv_sec - start.tv_sec)*1000000) + ((double)(end.tv_nsec - start.tv_nsec)/1000);
@@ -108,7 +108,7 @@ void Cleanup(bool noError) {  // simplified version from CUDA SDK
     if (z)
         cudaFree(z);
 
-    error = cudaThreadExit();
+    error = cudaDeviceReset();
 
     if (!noError || error != cudaSuccess)
         printf("cuda malloc or cuda thread exit failed \n");

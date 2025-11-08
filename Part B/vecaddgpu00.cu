@@ -67,7 +67,7 @@ int main(int argc, char** argv) {
     if (error != cudaSuccess) Cleanup(false);
     error = cudaMalloc((void**)&device_z, size);
     if (error != cudaSuccess) Cleanup(false);
-    cudaThreadSynchronize();
+    cudaDeviceSynchronize();
     clock_gettime(CLOCK_MONOTONIC, &end);
     
     gpu_memory_allocation_time = ((double)(end.tv_sec - start.tv_sec)*1000000) + ((double)(end.tv_nsec - start.tv_nsec)/1000);
@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
     if (error != cudaSuccess) Cleanup(false);
     error = cudaMemcpy(device_z, host_z, size, cudaMemcpyHostToDevice);
     if (error != cudaSuccess) Cleanup(false);
-    cudaThreadSynchronize();
+    cudaDeviceSynchronize();
     clock_gettime(CLOCK_MONOTONIC, &end);
 
     memcopy_time = ((double)(end.tv_sec - start.tv_sec)*1000000) + ((double)(end.tv_nsec - start.tv_nsec)/1000);
@@ -92,7 +92,7 @@ int main(int argc, char** argv) {
     addVec<<<dimGrid, dimBlock>>>(n, device_x, device_y, device_z);
     error = cudaGetLastError();
     if (error != cudaSuccess) Cleanup(false);
-    cudaThreadSynchronize();
+    cudaDeviceSynchronize();
 
 
     // Invoke kernel
@@ -100,7 +100,7 @@ int main(int argc, char** argv) {
     addVec<<<dimGrid, dimBlock>>>(n, device_x, device_y, device_z);
     error = cudaGetLastError();
     if (error != cudaSuccess) Cleanup(false);
-    cudaThreadSynchronize();
+    cudaDeviceSynchronize();
     clock_gettime(CLOCK_MONOTONIC, &end);
 
     time = ((double)(end.tv_sec - start.tv_sec)*1000000) + ((double)(end.tv_nsec - start.tv_nsec)/1000);
@@ -108,7 +108,7 @@ int main(int argc, char** argv) {
     clock_gettime(CLOCK_MONOTONIC, &start);
     error = cudaMemcpy(host_z, device_z, size, cudaMemcpyDeviceToHost);
     if (error != cudaSuccess) Cleanup(false);
-    cudaThreadSynchronize();
+    cudaDeviceSynchronize();
     clock_gettime(CLOCK_MONOTONIC, &end);
     
     memcopy_time += ((double)(end.tv_sec - start.tv_sec)*1000000) + ((double)(end.tv_nsec - start.tv_nsec)/1000);
@@ -156,7 +156,7 @@ void Cleanup(bool noError) {  // simplified version from CUDA SDK
     if (host_z)
         free(host_z);
 
-    error = cudaThreadExit();
+    error = cudaDeviceReset();
 
     if (!noError || error != cudaSuccess)
         printf("cuda malloc or cuda thread exit failed \n");

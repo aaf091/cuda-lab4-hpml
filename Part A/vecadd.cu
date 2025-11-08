@@ -92,7 +92,7 @@ int main(int argc, char** argv)
     AddVectors<<<dimGrid, dimBlock>>>(d_A, d_B, d_C, ValuesPerThread);
     error = cudaGetLastError();
     if (error != cudaSuccess) Cleanup(false);
-    cudaThreadSynchronize();
+    cudaDeviceSynchronize();
 
     // Initialize timer  
     initialize_timer();
@@ -102,7 +102,7 @@ int main(int argc, char** argv)
     AddVectors<<<dimGrid, dimBlock>>>(d_A, d_B, d_C, ValuesPerThread);
     error = cudaGetLastError();
     if (error != cudaSuccess) Cleanup(false);
-    cudaThreadSynchronize();
+    cudaDeviceSynchronize();
 
     // Compute elapsed time 
     stop_timer();
@@ -157,7 +157,7 @@ void Cleanup(bool noError) {  // simplified version from CUDA SDK
     if (h_C)
         free(h_C);
         
-    error = cudaThreadExit();
+    error = cudaDeviceReset();
     
     if (!noError || error != cudaSuccess)
         printf("cuda malloc or cuda thread exit failed \n");
