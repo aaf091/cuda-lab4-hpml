@@ -98,9 +98,6 @@ make
 ./matmult01 32
 ```
 
-### What to report
-- A small table of **runtimes** and **speedups** (`speedup = T00 / T01`) for both vecadd and matmul.
-- 1–2 sentences explaining any trends (e.g., why `01` does/doesn’t outperform `00` on your GPU).
 
 > **Optional modernization (silence warnings):**
 > ```bash
@@ -174,61 +171,6 @@ make
 ./vecaddgpu01 100 3
 ```
 
-### Collect results into CSVs (recommended)
-
-Create `partB_results_step2.csv` and `partB_results_step3.csv` with header:
-```
-K_millions,CPU_ms,Scenario1_ms,Scenario2_ms,Scenario3_ms
-```
-
-You can automate using the helper script (if present):
-```bash
-bash collect_partB_results.sh
-```
-
-Or run the concise loop that writes both CSVs:
-```bash
-# initialize CSVs
-echo "K_millions,CPU_ms,Scenario1_ms,Scenario2_ms,Scenario3_ms" > partB_results_step2.csv
-echo "K_millions,CPU_ms,Scenario1_ms,Scenario2_ms,Scenario3_ms" > partB_results_step3.csv
-
-get_ms() { awk -F, 'NF>1{print $2; exit} END{print ""}' <<<"$1" | tr -d ' ' ; }
-for K in 1 5 10 50 100; do
-  cpu_ms=$(get_ms "$(./vecaddcpu $K)")
-  s1=$(get_ms "$(./vecaddgpu00 $K 1)"); s2=$(get_ms "$(./vecaddgpu00 $K 2)"); s3=$(get_ms "$(./vecaddgpu00 $K 3)")
-  echo "$K,$cpu_ms,$s1,$s2,$s3" >> partB_results_step2.csv
-  u1=$(get_ms "$(./vecaddgpu01 $K 1)"); u2=$(get_ms "$(./vecaddgpu01 $K 2)"); u3=$(get_ms "$(./vecaddgpu01 $K 3)")
-  echo "$K,$cpu_ms,$u1,$u2,$u3" >> partB_results_step3.csv
-done
-```
-
-### Plot (two charts)
-
-You may use the provided plotting utility if it exists:
-
-```bash
-# linear axes
-python3 plot_partB.py partB_results_step2.csv partB_results_step3.csv
-
-# log–log y-axis (recommended)
-python3 plot_partB.py partB_results_step2.csv partB_results_step3.csv --logy
-# -> partB_step2_chart.png, partB_step3_chart.png
-```
-
-If you only have a terminal transcript, use `plot_from_cli_log.py` (if provided) to parse it into CSVs/PNGs:
-```bash
-python3 plot_from_cli_log.py transcript.log
-```
-
-### What to submit
-- **Two plots** (PNG):  
-  1) **Step 2 (no UM)** — CPU + scenarios 1–3 vs **K (millions)**, y = ms  
-  2) **Step 3 (UM)** — CPU + scenarios 1–3 vs **K (millions)**, y = ms  
-  Use a log y-axis if scales differ widely.
-- The **CSVs** used to produce the plots (nice for reproducibility).
-- A short paragraph explaining the trend (allocation overhead, scenario scaling, UM comparison).
-
----
 
 ## Part C — Convolution (CUDA & cuDNN)
 
@@ -248,26 +190,35 @@ C3_<checksum>,<time_ms>
 ```
 
 
-**Save a CSV (optional but nice):**
-```bash
-{ echo "Case,Checksum,Time_ms"; \
-  ./convolution | sed -E 's/^C([123])_([0-9]+),([0-9.]+)/\1,\2,\3/'; } > partC_results.csv
-```
 
----
+## Analysis
 
-## Submission checklist
-
-- **Environment block** at top of your report (GPU model, CUDA version, container name).
 - **Part A**
   - Runtimes for `vecadd00` vs `vecadd01` and `matmult00` vs `matmult01`
-  - **Speedup** tables and 1–2 sentences of analysis
+    <img width="1170" height="234" alt="image" src="https://github.com/user-attachments/assets/41ded450-8dbc-46f8-baad-32f2525313e1" />
+
+    <img width="1204" height="258" alt="image" src="https://github.com/user-attachments/assets/e339ee78-a712-4a12-a193-846b3e628e74" />
+
+  - **Analysis**
+    
+    •	vecadd: The “01” variant is consistently slower , indicating the kernel is bandwidth-bound and the change reduced effective memory throughput(coalescing/ILP/occupancy         didn’t improve).
+    
+	  •	matmul: The “01” kernel wins at larger sizes because assigning a 2×2 tile per thread increases arithmetic intensity and data reuse, which pays off as N grows.
 - **Part B**
   - Two charts (**no UM** and **UM**) including CPU
-  - CSVs used to generate the charts
-  - Brief discussion of results (allocation overhead, scenario scaling, UM comparison)
+    <img width="1152" height="864" alt="image" src="https://github.com/user-attachments/assets/842af211-4401-45de-bc76-70eed28aa16d" />
+
+    <img width="1152" height="864" alt="image" src="https://github.com/user-attachments/assets/121d82d3-6036-41d5-86e7-04da22f607e0" />
+
+    <img width="1152" height="864" alt="image" src="https://github.com/user-attachments/assets/3cfe43a5-b9dc-4501-bc3a-35d29f27115f" />
+
+    <img width="1152" height="864" alt="image" src="https://github.com/user-attachments/assets/f60c1598-3100-4b7d-ae6f-8711e2fee51c" />
+  - End-to-end time is dominated by allocation (~380–400 ms per run) and is almost independent of K; it accounts for ~ 85–90% of total, while kernel execution is only ~55–68ms. As a result, the kernel-only curves are nearly flat and the total-time curves barely change with K. Changing the launch configuration (scenario scaling) has modest impact: scenario 3 (many blocks×256) is not consistently faster because the kernel is memory-bandwidth–bound and the extra parallelism doesn’t reduce the fixed costs; measured differences are within a few milliseconds. Unified Memory vs explicit device memory shows negligible difference on this workload—UM allocation is similar to cudaMalloc, and with linear, single-touch access there’s little page migration overhead. Takeaway: to see GPU speedups, reuse allocations (time only the compute region), consider pinned host memory + async copies, and amortize setup across multiple iterations.
 - **Part C**
-  - The three-line output (or `partC_results.csv`)
+  - The three-line output
+    
+    <img width="626" height="138" alt="Screenshot 2025-11-08 at 17 04 49" src="https://github.com/user-attachments/assets/174851c0-70cc-430e-bd11-4a422087495c" />
+
   - Note that C1/C2 checksums match C3 (within FP tolerance)
 
 ---
